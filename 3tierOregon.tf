@@ -29,107 +29,87 @@ resource "aws_route_table" "PublicRoute" {
   }
 }
 
-data "aws_availability_zones" "us-west-2" {}
+variable "az" {
+  type = "map"
+  description = "map aws_availability_zones"
+  default = {
+    "0" = "us-west-2a"
+    "1" = "us-west-2b"
+    "2" = "us-west-2c"
+  }
+}
 
-resource "aws_subnet" "devPublicSubnet2a" {
-  availability_zone = "${data.aws_availability_zones.us-west-2.names[0]}"
+variable "cidr_public" {
+  type = "map"
+  description = "map public subnet cidr_block per availability_zone"
+  default = {
+    "0" = "10.0.128.0/20"
+    "1" = "10.0.144.0/20"
+    "2" = "10.0.160.0/20"
+  }
+}
+
+resource "aws_subnet" "devPublicSubnet" {
+  count             = "3"
+  availability_zone = "${lookup(var.az,count.index)}"
   vpc_id            = "${aws_vpc.devVPC.id}"
-  cidr_block        = "10.0.128.0/20"
+  cidr_block        = "${lookup(var.cidr_public,count.index)}"
   
    tags {
      Name  = "Public"
    }
 }
 
-resource "aws_subnet" "devPublicSubnet2b" {
-  availability_zone = "${data.aws_availability_zones.us-west-2.names[1]}"
-  vpc_id            = "${aws_vpc.devVPC.id}"
-  cidr_block        = "10.0.144.0/20"
-  
-   tags {
-     Name  = "Public"
-   }
-}
+data "aws_subnet_ids" "public" {
+  vpc_id = "${aws_vpc.devVPC.id}"
 
-resource "aws_subnet" "devPublicSubnet2c" {
-  availability_zone = "${data.aws_availability_zones.us-west-2.names[2]}"
-  vpc_id            = "${aws_vpc.devVPC.id}"
-  cidr_block        = "10.0.160.0/20"
-  
-   tags {
-     Name  = "Public"
-   }
+  tags {
+    Name = "Public"
+  }
 }
 
 resource "aws_route_table_association" "rt_public_association" {
-  subnet_id       =   "${aws_subnet.devPublicSubnet2a.id}"
+  count           =   "3"
+  subnet_id       =   "${element(data.aws_subnet_ids.public.ids, count.index)}"
   route_table_id  =   "${aws_route_table.PublicRoute.id}"
 }
 
-resource "aws_route_table_association" "rt_public_association_2b" {
-  subnet_id       =   "${aws_subnet.devPublicSubnet2b.id}"
-  route_table_id  =   "${aws_route_table.PublicRoute.id}"
+variable "cidr_private" {
+  type = "map"
+  description = "map private subnet cidr_block per availability_zone"
+  default = {
+    "0" = "10.0.0.0/19"
+    "1" = "10.0.32.0/19"
+    "2" = "10.0.64.0/19"
+  }
 }
 
-resource "aws_route_table_association" "rt_public_association_2c" {
-  subnet_id       =   "${aws_subnet.devPublicSubnet2c.id}"
-  route_table_id  =   "${aws_route_table.PublicRoute.id}"
-}
-
-resource "aws_subnet" "devPrivateSubnet2a" {
-  availability_zone = "${data.aws_availability_zones.us-west-2.names[0]}"
+resource "aws_subnet" "devPrivateSubnet" {
+  count             = "3"
+  availability_zone = "${lookup(var.az,count.index)}"
   vpc_id            = "${aws_vpc.devVPC.id}"
-  cidr_block        = "10.0.0.0/19"
+  cidr_block        = "${lookup(var.cidr_private,count.index)}"
   
    tags {
      Name  = "Private"
    }
 }
 
-resource "aws_subnet" "devPrivateSubnet2b" {
-  availability_zone = "${data.aws_availability_zones.us-west-2.names[1]}"
-  vpc_id            = "${aws_vpc.devVPC.id}"
-  cidr_block        = "10.0.32.0/19"
-  
-   tags {
-     Name  = "Private"
-   }
+variable "cidr_dbprivate" {
+  type = "map"
+  description = "map database private subnet cidr_block per availability_zone"
+  default = {
+    "0" = "10.0.192.0/21"
+    "1" = "10.0.200.0/21"
+    "2" = "10.0.208.0/21"
+  }
 }
 
-resource "aws_subnet" "devPrivateSubnet2c" {
-  availability_zone = "${data.aws_availability_zones.us-west-2.names[2]}"
+resource "aws_subnet" "devDBPrivateSubnet" {
+  count             = "3"
+  availability_zone = "${lookup(var.az,count.index)}"
   vpc_id            = "${aws_vpc.devVPC.id}"
-  cidr_block        = "10.0.64.0/19"
-  
-   tags {
-     Name  = "Private"
-   }
-}
-
-resource "aws_subnet" "devDBPrivateSubnet2a" {
-  availability_zone = "${data.aws_availability_zones.us-west-2.names[0]}"
-  vpc_id            = "${aws_vpc.devVPC.id}"
-  cidr_block        = "10.0.192.0/21"
-  
-   tags {
-     Name  = "DBPrivate"
-   }
-}
-
-resource "aws_subnet" "devDBPrivateSubnet2b" {
-  availability_zone = "${data.aws_availability_zones.us-west-2.names[1]}"
-  vpc_id            = "${aws_vpc.devVPC.id}"
-  cidr_block        = "10.0.200.0/21"
-  
-   tags {
-     Name  = "DBPrivate"
-   }
-}
-
-resource "aws_subnet" "DBPrivateSubnet2c" {
-  availability_zone = "${data.aws_availability_zones.us-west-2.names[2]}"
-  vpc_id            = "${aws_vpc.devVPC.id}"
-  cidr_block        = "10.0.208.0/21"
+  cidr_block        = "${lookup(var.cidr_dbprivate,count.index)}"
   
    tags {
      Name  = "DBPrivate"
