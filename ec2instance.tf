@@ -34,15 +34,34 @@ data "aws_ami" "linux" {
   }
 }
 
+variable "vpc_id" {}
+variable "key_pair" {}
+
+data "aws_subnet_ids" "private" {
+  vpc_id = "${var.vpc_id}"
+
+  tags {
+    Name = "Private"
+  }
+}
+
+data "aws_security_groups" "ssh" {
+  filter {
+    name   = "group-name"
+    values = ["SSH"]
+  }
+}   
 
 resource "aws_instance" "example" {
   count             = "3"
   ami               = "${data.aws_ami.linux.id}"
   instance_type     = "t2.micro"
+  subnet_id         = "${element(data.aws_subnet_ids.private.ids, count.index)}"
   availability_zone = "${lookup(var.az,count.index)}"
+  security_groups   = ["${data.aws_security_groups.ssh.ids}"]
+  key_name          = "${var.key_pair}"
 
   tags {
      Name  = "LinuxTF_${lookup(var.az,count.index)}"
   }
-
 }
