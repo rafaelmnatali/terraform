@@ -61,6 +61,7 @@ resource "aws_subnet" "devPublicSubnet" {
 }
 
 data "aws_subnet_ids" "public" {
+  depends_on = ["aws_subnet.devPublicSubnet"]
   vpc_id = "${aws_vpc.devVPC.id}"
 
   tags {
@@ -69,6 +70,7 @@ data "aws_subnet_ids" "public" {
 }
 
 resource "aws_route_table_association" "rt_public_association" {
+  depends_on = ["aws_subnet.devPublicSubnet"]
   count           =   "3"
   subnet_id       =   "${element(data.aws_subnet_ids.public.ids, count.index)}"
   route_table_id  =   "${aws_route_table.PublicRoute.id}"
